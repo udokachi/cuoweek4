@@ -4,18 +4,18 @@
  * @param {string[]} inputPath An array of csv files to read
  * @param {string} outputFile The path where to output the report
  */
- import path from "path"
- import fs, {ReadStream, WriteStream} from "fs";
- import childProcess from "child_process";
+import path from 'path';
+import fs, { ReadStream, WriteStream } from 'fs';
+import childProcess from 'child_process';
 
- interface InputOutput {
+interface InputOutput {
   'valid-domains': string[];
   totalEmailsParsed: number;
   totalValidEmails: number;
   categories: { [k: string]: number };
 }
 
-let output: InputOutput = {
+const output: InputOutput = {
   'valid-domains': [],
   totalEmailsParsed: 0,
   totalValidEmails: 0,
