@@ -4,8 +4,48 @@
  * @param {string[]} inputPath An array of csv files to read
  * @param {string} outputFile The path where to output the report
  */
-function validateEmailAddresses(inputPath: string[], outputFile: string) {
-  console.log('Complete the implementation in src/validation.ts');
+ import path from "path"
+ import fs, {ReadStream, WriteStream} from "fs";
+ import childProcess from "child_process";
+
+ interface InputOutput {
+  'valid-domains': string[];
+  totalEmailsParsed: number;
+  totalValidEmails: number;
+  categories: { [k: string]: number };
+}
+
+let output: InputOutput = {
+  'valid-domains': [],
+  totalEmailsParsed: 0,
+  totalValidEmails: 0,
+  categories: {},
+};
+
+async function validateEmailAddresses(inputPath: string[], outputFile: string) {
+  const inputFile = path.join(process.cwd(), ...inputPath);
+  const outputFileRead: WriteStream = fs.createWriteStream(outputFile);
+  const inputFileRead = fs.createReadStream(inputFile);
+  let count = 1;
+  for await (const chunkString of inputFileRead) {
+    const emailArr = chunkString.toString().split('\n');
+
+    emailArr.forEach((el: string) => {
+      const domainHolder = el.split('@').slice(1)[0];
+
+      const child = childProcess
+        .spawn('dig', ['MX', `${domainHolder}`, '+short', '+all'])
+        .stdout.on('data', () => {
+          if (child) {
+            while (count > 1) {
+              outputFileRead.write('Emails');
+              count += 1;
+            }
+            outputFileRead.write(`${el}`);
+          }
+        });
+    });
+  }
 }
 
 export default validateEmailAddresses;
