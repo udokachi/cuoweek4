@@ -6,7 +6,7 @@
  */
 import path from 'path';
 import fs, { ReadStream, WriteStream } from 'fs';
-import childProcess from 'child_process';
+import dns from 'dns';
 
 interface InputOutput {
   'valid-domains': string[];
@@ -24,28 +24,33 @@ const output: InputOutput = {
 
 async function validateEmailAddresses(inputPath: string[], outputFile: string) {
   const inputFile = path.join(process.cwd(), ...inputPath);
-  const outputFileRead: WriteStream = fs.createWriteStream(outputFile);
-  const inputFileRead = fs.createReadStream(inputFile);
-  let count = 1;
-  for await (const chunkString of inputFileRead) {
-    const emailArr = chunkString.toString().split('\n');
+  const outputFileRead: WriteStream = fs.createWriteStream(outputFile, 'utf-8');
+  const inputFileRead = fs.createReadStream(inputFile, 'utf-8');
 
-    emailArr.forEach((el: string) => {
-      const domainHolder = el.split('@').slice(1)[0];
+  outputFileRead.write(`Emails\n`);
+  let file = '';
 
-      const child = childProcess
-        .spawn('dig', ['MX', `${domainHolder}`, '+short', '+all'])
-        .stdout.on('data', () => {
-          if (child) {
-            while (count > 1) {
-              outputFileRead.write('Emails');
-              count += 1;
-            }
-            outputFileRead.write(`${el}`);
+  inputFileRead.on('data', (chunk) => {
+    file = chunk.toString();
+  });
+
+  inputFileRead.on('end', () => {
+    const emails = file.split('\n');
+    for (const email of emails) {
+      const domain = email.split('@')[1];
+      if (domain) {
+        dns.resolveMx(domain, (err, address) => {
+          if (address && address.length > 0) {
+            outputFileRead.write(`${email}\n`);
           }
         });
-    });
-  }
+      }
+    }
+  });
+
+  inputFileRead.on('err', (err) => {
+    console.log(err);
+  });
 }
 
 export default validateEmailAddresses;

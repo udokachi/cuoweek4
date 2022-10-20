@@ -24,6 +24,7 @@ const output: InputOutput = {
 async function analyseFiles(inputPaths: string[], outputPath: string) {
   const inputFile = path.join(process.cwd(), ...inputPaths);
   const inputFileRead = fs.createReadStream(inputFile);
+  const outputFileRead = fs.createWriteStream(outputPath);
 
   for await (const chunkString of inputFileRead) {
     const emailArr = chunkString.toString().split('\n');
@@ -46,6 +47,8 @@ async function analyseFiles(inputPaths: string[], outputPath: string) {
         }
       }
     });
+
+    outputFileRead.write(JSON.stringify(output, null, 2));
   }
   console.log('Complete the implementation in src/analysis.ts');
 }
